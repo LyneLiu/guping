@@ -45,6 +45,7 @@ var getJsonFromJsonP2 = function (url, callback) {
 /* 获取数据 */
 exports.getData = function (req, res) {
   var collection = db.get('onObservation');
+  var collection2 = db.get('onObservationplus');
   collection.find({}, {}, function (e, docs) {
 
     var newdata = [];
@@ -63,7 +64,6 @@ exports.getData = function (req, res) {
       /* 获取当前得日期 如2015-11-11*/
       date = new Date();
       Ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-      console.log(Ymd);
 
       /* 求得持股天数 */
       sDate= docs[i].startDate;
@@ -81,25 +81,32 @@ exports.getData = function (req, res) {
         "author": docs[i].author,
         "startDate": docs[i].startDate,
         "endDate": eDate,
-        "codePriceStart": docs[i].codePriceStart,
-        "codePriceEnd": docs[i].codePriceEnd,
+        "codePriceStart": parseFloat(docs[i].codePriceStart),
+        "codePriceEnd": parseFloat(docs[i].codePriceEnd),
         "code_up": code_up_string,
-        "sh300Start": docs[i].sh300Start,
-        "sh300End": docs[i].sh300End,
+        "sh300Start": parseFloat(docs[i].sh300Start),
+        "sh300End": parseFloat(docs[i].sh300End),
         "sh300_up": sh300_up_string,
-        "relative_up": relative_up_string,
+        "relative_up": parseFloat(relative_up),
+        "relative_up_string": relative_up_string,
         "hold_days": hold_days,
         "ifsell": docs[i].ifsell
       }
 
       newdata.push(one);
     }
-    console.log(newdata);
+    console.log('Get data success');
 
-    return res.jsonp(newdata);
-  })
+    // 这里为了方便把想尽的信息存储在了onObservationplus中
+    // 以便统计排序等操作
+    collection2.remove({}, function () {
+      collection2.insert(newdata, function (err, result) {
+        console.log('Insert to onObservationplus');
+        return res.jsonp(newdata);
+      });
+    });
+  });
 }
-
 
 
 /* 添加数据 */
@@ -114,19 +121,17 @@ exports.add = function (req, res) {
     author: req.body.author,
     startDate: req.body.startDate,
     endDate: req.body.endDate,
-    codePriceStart: req.body.codePriceStart,
-    codePriceEnd: req.body.codePriceEnd,
-    sh300Start: req.body.sh300Start,
-    sh300End: req.body.sh300End,
+    codePriceStart: parseFloat(req.body.codePriceStart),
+    codePriceEnd: parseFloat(req.body.codePriceEnd),
+    sh300Start: parseFloat(req.body.sh300Start),
+    sh300End: parseFloat(req.body.sh300End),
     ifsell: 0
   }
 
   var collection = db.get('onObservation');
-  collection.insert(json, function (e, docs) {
-  });
+  collection.insert(json, function (e, docs) {});
 
 }
-
 
 
 /* 更新数据 */
@@ -195,7 +200,6 @@ exports.update = function (req, res) {
 }
 
 
-
 /* 卖出 */
 exports.sell = function (req, res) {
 
@@ -243,6 +247,79 @@ exports.sell = function (req, res) {
 };
 
 
+/* 排名 */
+exports.ranklist = function (req, res) {
+
+  var MongoClient = require('mongodb').MongoClient
+
+  MongoClient.connect('mongodb://localhost:27017/guping', function (err, db) {
+    var collection = db.collection('onObservationplus');
+
+    collection.aggregate([
+      {$group: {_id: "$author", avg: {$avg: "$relative_up"}}},
+      {$sort: {avg: -1}}
+    ], function (err, result) {
+      console.log(result);
+
+      resu = []
+      for (var i in result) {
+        one = {
+          "author": result[i]._id,
+          "avg": (result[i].avg).toFixed(2).toString() + '%'
+        }
+        resu.push(one);
+      }
+      console.log(resu)
+
+      return res.jsonp(resu);
+    });
+
+  });
+
+  /*
+  var MongoClient = require('mongodb').MongoClient,
+      test = require('assert');
+
+  MongoClient.connect('mongodb://localhost:27017/test', function(err, db) {
+    // Some docs for insertion
+    var docs = [{
+        title : "this is my title", author : "bob", posted : new Date() ,
+        pageViews : 5, tags : [ "fun" , "good" , "fun" ], other : { foo : 5 },
+        comments : [
+          { author :"joe", text : "this is cool" }, { author :"sam", text : "this is bad" }
+        ]}];
+
+    // Create a collection
+    var collection = db.collection('aggregationExample1');
+    // Insert the docs
+    collection.insertMany(docs, {w: 1}, function(err, result) {
+
+      // Execute aggregate, notice the pipeline is expressed as an Array
+      collection.aggregate([
+          { $project : {
+            author : 1,
+            tags : 1
+          }},
+          { $unwind : "$tags" },
+          { $group : {
+            _id : {tags : "$tags"},
+            authors : { $addToSet : "$author" }
+          }}
+        ], function(err, result) {
+          test.equal(null, err);
+          test.equal('good', result[0]._id.tags);
+          test.deepEqual(['bob'], result[0].authors);
+          test.equal('fun', result[1]._id.tags);
+          test.deepEqual(['bob'], result[1].authors);
+          console.log(result);
+
+          db.close();
+          return res.jsonp({"hello": "world"});
+      });
+    });
+  });
+ */
+}
 
 
 

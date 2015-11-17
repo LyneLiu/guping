@@ -86,7 +86,7 @@ $(document).on('click', '#add', function () {
       /* 获得所需数据 */
       name = data.Value[2];
       codePriceStart = data.Value[25];  // 昨日收盘价
-      codePriceEnd = data.Value[25]     // 今日收盘价
+      codePriceEnd = data.Value[25];     // 今日收盘价
 
       /* 请求沪深300的数据 */
       $.ajax({
@@ -164,6 +164,9 @@ $(document).on('click', 'table tr td span', function () {
 
   setTimeout("location.reload()", 3000);
 });
+
+
+
 
 
 
