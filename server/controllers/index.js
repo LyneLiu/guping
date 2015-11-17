@@ -3,6 +3,9 @@ var monk = require('monk');
 var db = monk('localhost:27017/guping');
 var request = require('request');
 var async = require('async');
+var MongoClient = require('mongodb').MongoClient
+
+dbpath='mongodb://localhost:27017/guping';
 
 /* 用来获取jsop */
 // #FIXME
@@ -154,11 +157,14 @@ exports.update = function (req, res) {
     }
     console.log("need update: " + code_list);
 
-
     /* 从股票接口获取最新的数据 */
     async.every(code_list, function (code, callback) {
 
-      // 6开头股票代码与0，3开头的股票接口不一样
+      /*
+      *  6开头股票代码为沪市
+      *  0, 3开头的股票为深市
+      *  它们的接口不一样
+      */
       if(code[0]==='6') {
         flag = '1';
       }
@@ -183,19 +189,16 @@ exports.update = function (req, res) {
 
     // 请求沪深300数据
     getJsonFromJsonP2(sh300_url, function (err, data) {
-      // console.log(typeof(parseFloat(data.split('[')[1].split(']')[0].split(',')[2])));
 
       // 将string转成number
       sh300End = parseFloat(data.split('[')[1].split(']')[0].split(',')[2]);
 
       // 更新沪深300指数
-      var collection = db.get('onObservation');
-      collection.update({"ifsell": {"$eq": 0}}, {$set: {"sh300End": sh300End}},  { multi: true }, function (e, docs) {
-        console.log('update sh300');
-      });
+        var collection = db.get('onObservation');
+        collection.update({"ifsell": {"$eq": 0}}, {$set: {"sh300End": sh300End}},  { multi: true }, function (e, docs) {
+          console.log('update sh300');
+        });
     });
-
-    return res.jsonp({"hello": "world"});
   });
 }
 
@@ -218,7 +221,6 @@ exports.sell = function (req, res) {
   /* 获取当前得日期 如2015-11-11*/
   date = new Date();
   Ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-  console.log(Ymd);
 
   /* 求得持股天数 */
   sDate= startDate;
@@ -229,7 +231,7 @@ exports.sell = function (req, res) {
   eRDate = new Date(eArr[0], eArr[1], eArr[2]);
   hold_days = (eRDate-sRDate)/(24*60*60*1000);
 
-  /* 待更新的数库 */
+  /* 待更新的数据 */
   json = {
     "sh300End": sh300End,
     "codePriceEnd": codePriceEnd,
@@ -238,29 +240,31 @@ exports.sell = function (req, res) {
     "ifsell": 1
   }
 
-  var collection = db.get('onObservation');
-  collection.update({"code": code, "author": author}, {$set: json}, function (e, docs) {
-    console.log('sell: ' + code);
+  /* 写入数据库 */
+  MongoClient.connect(dbpath, function (err, db) {
+    var collection = db.collection('onObservation');
+    collection.update({"code": code, "author": author}, {$set: json}, function (e, docs) {
+      console.log('sell: ' + code);
+    });
+    db.close();
   });
-
-  return res.jsonp({"hello": "world"});
 };
 
 
 /* 排名 */
 exports.ranklist = function (req, res) {
 
-  var MongoClient = require('mongodb').MongoClient
 
-  MongoClient.connect('mongodb://localhost:27017/guping', function (err, db) {
+  /* 利用mongodb的aggregate聚合得出结果 */
+  MongoClient.connect(dbpath, function (err, db) {
     var collection = db.collection('onObservationplus');
 
     collection.aggregate([
       {$group: {_id: "$author", avg: {$avg: "$relative_up"}}},
       {$sort: {avg: -1}}
     ], function (err, result) {
-      console.log(result);
 
+      // 重新组合返回数据
       resu = []
       for (var i in result) {
         one = {
@@ -271,57 +275,14 @@ exports.ranklist = function (req, res) {
       }
       console.log(resu)
 
+      db.close();
+
       return res.jsonp(resu);
     });
 
   });
 
-  /*
-  var MongoClient = require('mongodb').MongoClient,
-      test = require('assert');
-
-  MongoClient.connect('mongodb://localhost:27017/test', function(err, db) {
-    // Some docs for insertion
-    var docs = [{
-        title : "this is my title", author : "bob", posted : new Date() ,
-        pageViews : 5, tags : [ "fun" , "good" , "fun" ], other : { foo : 5 },
-        comments : [
-          { author :"joe", text : "this is cool" }, { author :"sam", text : "this is bad" }
-        ]}];
-
-    // Create a collection
-    var collection = db.collection('aggregationExample1');
-    // Insert the docs
-    collection.insertMany(docs, {w: 1}, function(err, result) {
-
-      // Execute aggregate, notice the pipeline is expressed as an Array
-      collection.aggregate([
-          { $project : {
-            author : 1,
-            tags : 1
-          }},
-          { $unwind : "$tags" },
-          { $group : {
-            _id : {tags : "$tags"},
-            authors : { $addToSet : "$author" }
-          }}
-        ], function(err, result) {
-          test.equal(null, err);
-          test.equal('good', result[0]._id.tags);
-          test.deepEqual(['bob'], result[0].authors);
-          test.equal('fun', result[1]._id.tags);
-          test.deepEqual(['bob'], result[1].authors);
-          console.log(result);
-
-          db.close();
-          return res.jsonp({"hello": "world"});
-      });
-    });
-  });
- */
 }
-
-
 
 
 
