@@ -4,6 +4,9 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+// var mongoose = require('mongoose');
+var session = require('express-session');
+var MongoStore = require('connect-mongo')(session);
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -31,6 +34,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(session({
+  secret: 'guping',
+  key: 'balabala',
+  cookie: {maxAge: 1000 * 60 * 60 * 24 * 30},
+  store: new MongoStore({
+    db: 'guping',
+    autoReconnection: true
+    // mongooseConnection: mongoose.connection
+  })
+}));
 
 app.use('/', routes);
 app.use('/users', users);
