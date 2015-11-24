@@ -7,44 +7,6 @@ var MongoClient = require('mongodb').MongoClient
 
 dbpath='mongodb://localhost:27017/guping';
 
-/* 用来获取jsop */
-// #FIXME
-// getJsonFromJsonP 与getJsonFromJsonP2 两个函数是否能合并为一个函数呢?
-var getJsonFromJsonP = function (url, callback) {
-  request(url, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      var jsonpData = body;
-      var json;
-      //if you don't know for sure that you are getting jsonp, then i'd do something like this
-      try
-      {
-         json = JSON.parse(jsonpData);
-      }
-      catch(e)
-      {
-          var startPos = jsonpData.indexOf('({');
-          var endPos = jsonpData.indexOf('})');
-          var jsonString = jsonpData.substring(startPos+1, endPos+1);
-          json = JSON.parse(jsonString);
-      }
-      callback(null, json);
-    } else {
-      callback(error);
-    }
-  });
-};
-
-var getJsonFromJsonP2 = function (url, callback) {
-  request(url, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      var jsonpData = body;
-      callback(null, jsonpData);
-    } else {
-      callback(error);
-    }
-  });
-};
-
 /* 获取数据 */
 exports.getData = function (req, res) {
   var collection = db.get('onObservation');
@@ -138,66 +100,87 @@ exports.add = function (req, res) {
 
 
 /* 更新数据 */
-//TODO
-// 我觉得本函数应该进行优化或者重构
-// 但是现在没有时间优化，但是现在其依旧可以工作...
 exports.update = function (req, res) {
 
-  url = 'http://nuff.eastmoney.com/EM_Finance2015TradeInterface/JS.ashx?id=0006812';
+  //url = 'http://nuff.eastmoney.com/EM_Finance2015TradeInterface/JS.ashx?id=0006812';
   sh300_url = 'http://nufm2.dfcfw.com/EM_Finance2014NumericApplication/JS.aspx?type=CT&cmd=0003001&&sty=AMIC&st=z&sr=1&p=1&ps=1000&cb=&js=callbacksh300&token=beb0a0047196124721f56b0f0ff5a27c'
 
-  /* 获取待跟踪的股票 */
-  var collection = db.get('onObservation');
-  collection.find({"ifsell": {"$eq": 0}}, {"code": 1}, function (err, items) {
+  // 获取待更新的股票列表
+  MongoClient.connect(dbpath, function (err, db) {
+    var collection = db.collection('onObservation');
 
-    // 用于存储待更新的股票
-    code_list = []
-    for (i in items) {
-      code_list.push(items[i]['code']);
-    }
-    console.log("need update: " + code_list);
+    collection.find({"ifsell": {"$eq": 0}}, {"code": 1, "_id": 0}).toArray(function (err, docs) {
 
-    /* 从股票接口获取最新的数据 */
-    async.every(code_list, function (code, callback) {
-
-      /*
-      *  6开头股票代码为沪市
-      *  0, 3开头的股票为深市
-      *  它们的接口不一样
-      */
-      if(code[0]==='6') {
-        flag = '1';
+      // 构造股票代码列表
+      var code_list = [];
+      for (i in docs) {
+        code_list.push(docs[i]['code']);
       }
-      else {
-        flag = '2';
-      }
+      console.log("need update: " + code_list);
 
-      url = 'http://nuff.eastmoney.com/EM_Finance2015TradeInterface/JS.ashx?id=' + code + flag;
-      // 请求数据
-      getJsonFromJsonP(url, function (err, data) {
+      // 更新个股及沪深300数据
+      async.parallel([
+        // 负责个股更新
+        function (callback) {
+          async.each(code_list, function (code, callback) {
+            flag = code[0] === '6' ? '1' : '2';
 
-        // 更新股票数据， 最新数据为data.Value[25]
-        var collection = db.get('onObservation');
-        console.log(data.Value[25]);
-        collection.update({"code": code}, {$set: {"codePriceEnd": data.Value[25]}}, function (e, docs) {
-          console.log("update code: " + code);
-        });
+            // 拼接接口地址
+            url = 'http://nuff.eastmoney.com/EM_Finance2015TradeInterface/JS.ashx?id=' + code + flag;
+
+            // 请求个股数据
+            request(url, function (err, response, data) {
+              if (!err && response.statusCode == 200) {
+                var jsonpData = data;
+                var startPos = jsonpData.indexOf('({');
+                var endPos = jsonpData.indexOf('})');
+                var jsonString = jsonpData.substring(startPos+1, endPos+1);
+                json = JSON.parse(jsonString);
+
+                codePriceEnd = parseFloat(json['Value'][25]); // 当前价
+              }
+              else {
+                console.log(err);
+              }
+
+              // 更新数据
+              collection.updateOne({"code": code}, {$set: {"codePriceEnd": codePriceEnd}});
+              callback();
+            });
+
+          }, function (err) {
+            console.log('> code done');
+            callback(null, 'codes update');
+          });
+        },
+        // 负责沪深300指数更新
+        function (callback) {
+
+          request(sh300_url, function (err, response, data) {
+            if (!err && response.statusCode == 200) {
+              var startPos = data.indexOf('([');
+              var endPos = data.indexOf('])');
+              var string = data.substring(startPos+3, endPos-1);
+              var list = string.split(',');
+              console.log(list[2]);
+              sh300End = parseFloat(list[2]);
+            }
+            else {
+              console.log(err);
+            }
+
+            // 更新数据
+            collection.updateOne({"ifsell": {"$eq": 0}}, {$set: {"sh300End": sh300End}}, {multi: true});
+            console.log('> sh300 done');
+
+            callback(null, 'sh300 update');
+          });
+        },
+      ], function (err, result) {
+        console.log(result);
+        db.close();
+        return res.jsonp({'status': 'success'});
       });
-    }, function (err) {
-      console.log("err:" + err);
-    });
-
-    // 请求沪深300数据
-    getJsonFromJsonP2(sh300_url, function (err, data) {
-
-      // 将string转成number
-      sh300End = parseFloat(data.split('[')[1].split(']')[0].split(',')[2]);
-
-      // 更新沪深300指数
-        var collection = db.get('onObservation');
-        collection.update({"ifsell": {"$eq": 0}}, {$set: {"sh300End": sh300End}},  { multi: true }, function (e, docs) {
-          console.log('update sh300');
-        });
     });
   });
 }
