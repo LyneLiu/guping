@@ -131,6 +131,13 @@ $(document).on('click', '#add', function () {
 $(document).on('click', '#update', function () {
   $.ajax({
     url: 'http://127.0.0.1:3000/update',
+    success: function (result) {
+      if (result.status) {
+        location.reload();
+      } else {
+        alert('更新失败');
+      }
+    }
   });
 
  setTimeout("location.reload()", 3000);

@@ -1,7 +1,8 @@
 exports.needLogin = function (req, res, next) {
 
   if (!req.session.user) {
-    return res.redirect('/login');
+    // return res.jsonp({'status': 'false'});
+    return res.redirect('login.html');
   }
   next();
 }
@@ -9,7 +10,8 @@ exports.needLogin = function (req, res, next) {
 exports.needNoLogin = function (req, res, next) {
 
   if (req.session.user) {
-    return res.redirect('/admin');
+    return res.redirect('/');
   }
   next();
 }
+

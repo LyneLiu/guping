@@ -6,7 +6,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 // var mongoose = require('mongoose');
 var session = require('express-session');
-var MongoStore = require('connect-mongo')(session);
+// var MongoStore = require('connect-mongo')(session);
+var RedisStore = require('connect-redis')(session);
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -35,8 +36,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+/*
 app.use(session({
-  secret: 'guping',
+  secret: 'guping sincerefly my name is lxd',
   key: 'balabala',
   cookie: {maxAge: 1000 * 60 * 60 * 24 * 30},
   store: new MongoStore({
@@ -45,6 +47,31 @@ app.use(session({
     // mongooseConnection: mongoose.connection
   })
 }));
+*/
+
+options = {
+  host: "127.0.0.1",
+  port: 6379,
+  db: "test_session"
+}
+
+app.use(session({
+  cookie: {maxAge: 1000 * 60 * 60 * 24 * 30},
+  store: new RedisStore(),
+  secret: "123sjfksfjjk"
+  // resave: true,
+  // saveUninitialized: true
+}));
+
+/*
+app.use(function (req, res, next) {
+  console.log('12444');
+  if (!req.session) {
+    return next(new Error('oh no'))
+  }
+  next()
+});
+*/
 
 app.use('/', routes);
 app.use('/users', users);

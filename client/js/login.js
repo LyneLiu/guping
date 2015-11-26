@@ -1,11 +1,23 @@
-/* 获取排名 */
+/* 登陆 */
+
+$(document).ready(function () {
+
+  $.ajax({
+    type: 'GET',
+    url: 'http://127.0.0.1:3000/auth_status',
+    success: function (result) {
+       if (result.status) {
+         window.location = '/';
+       };
+    }
+  });
+
+});
+
 $(document).on('click', '#submit', function () {
 
   username = $('input[name=username]').val();
   password = $('input[name=password]').val();
-
-  alert(username);
-  alert(password);
 
   $.ajax({
     type: 'POST',

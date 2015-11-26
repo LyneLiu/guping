@@ -179,7 +179,7 @@ exports.update = function (req, res) {
       ], function (err, result) {
         console.log(result);
         db.close();
-        return res.jsonp({'status': 'success'});
+        return res.jsonp({'status': true, 'message': 'update success'});
       });
     });
   });

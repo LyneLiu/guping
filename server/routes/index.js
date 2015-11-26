@@ -13,8 +13,9 @@ router.post('/sell', index.sell);
 router.get('/rank', index.ranklist);
 
 // 登陆
-router.post('/login', auth.needLogin, admin.loginCheck);
-// router.get('/logout', admin.logout);
+router.get('/auth_status', admin.auth_status);
+router.post('/login', admin.loginCheck);
+router.get('/logout', admin.logout);
 
 test = require('../controllers/test.js');
 router.get('/test', test.hello);
