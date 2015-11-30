@@ -9,9 +9,17 @@ dbpath='mongodb://localhost:27017/guping';
 
 /* 获取数据 */
 exports.getData = function (req, res) {
+
+  if (req.params.user) {
+    console.log(req.params.user);
+    finder = {"author": req.params.user};
+  } else {
+    finder = {};
+  }
+
   var collection = db.get('onObservation');
   var collection2 = db.get('onObservationplus');
-  collection.find({}, {}, function (e, docs) {
+  collection.find(finder, {}, function (e, docs) {
 
     var newdata = [];
     for (var i=0; i<docs.length; i++) {
@@ -71,6 +79,11 @@ exports.getData = function (req, res) {
       });
     });
   });
+}
+
+/* 获取指定用户的数据 */
+exports.getUserData = function () {
+
 }
 
 

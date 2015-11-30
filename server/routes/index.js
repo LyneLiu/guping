@@ -12,6 +12,9 @@ router.get('/update', index.update);
 router.post('/sell', index.sell);
 router.get('/rank', index.ranklist);
 
+
+router.get('/user/:user', index.getData);
+
 // 登陆
 router.get('/auth_status', admin.auth_status);
 router.post('/login', admin.loginCheck);
