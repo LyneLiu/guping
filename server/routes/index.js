@@ -7,7 +7,8 @@ admin = require('../controllers/admin.js');
 
 // 获取数据
 router.get('/getData', index.getData);
-router.post('/add', auth.needLogin, index.add);
+//router.post('/add', auth.needLogin, index.add);
+router.post('/add', index.add);
 router.get('/update', index.update);
 router.post('/sell', index.sell);
 router.get('/rank', index.ranklist);

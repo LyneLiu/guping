@@ -57,26 +57,74 @@ $(document).ready(function() {
 });
 
 
+
 /* 添加新的股票 */
 $(document).on('click', '#add', function () {
 
-  /* 传入后端 */
+  /* 接口地址 */
+  code = $('input[name=code]').val();
+  if(code[0]==='6') {
+    flag = '1';
+  }
+  else {
+    flag = '2';
+  }
+  code_url = "http://nuff.eastmoney.com/EM_Finance2015TradeInterface/JS.ashx?id=" + code + flag;
+  sh300_url = "http://nufm2.dfcfw.com/EM_Finance2014NumericApplication/JS.aspx?type=CT&cmd=0003001&&sty=AMIC&st=z&sr=1&p=1&ps=1000&cb=&js=callbacksh300&token=beb0a0047196124721f56b0f0ff5a27c"
+
+  /* 获取当前得日期 如2015-11-11*/
+  date = new Date();
+  Ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+
+  /* 请求单只股票的数据 */
   $.ajax({
-    type: 'POST',
-    url: 'http://127.0.0.1:3000/add',
-    data: {
-      code: $('input[name=code]').val(),
-      author: $('input[name=author]').val(),
-    },
-    success: function (res) {
-      if (res.status == 0) {
-        location.reload();
-      } else {
-        alert(res.message);
-      }
+    url: code_url,
+    dataType: 'jsonp',
+    jsonpCallback: "callback",
+    success: function (data) {
+
+      /* 获得所需数据 */
+      name = data.Value[2];
+      codePriceStart = data.Value[25];  // 昨日收盘价
+      codePriceEnd = data.Value[25];     // 今日收盘价
+
+      /* 请求沪深300的数据 */
+      $.ajax({
+        url: sh300_url,
+        dataType: 'jsonp',
+        jsonpCallback: "callbacksh300",
+        success: function (sh300) {
+
+          sh = sh300[0].split(',');
+          sh300Start = sh[2];   // 昨日收盘价
+          sh300End = sh[2];     // 今日开盘价
+
+
+          /* 传入后端 */
+          $.ajax({
+            type: 'POST',
+            url: 'http://127.0.0.1:3000/add',
+            data: {
+              code: $('input[name=code]').val(),
+              name: name,
+              author: $('input[name=author]').val(),
+              startDate: Ymd,
+              endDate: '',
+              codePriceStart: codePriceStart,
+              codePriceEnd: codePriceEnd,
+              sh300Start: sh300Start,
+              sh300End: sh300End,
+              ifsell: 0
+            },
+          });
+
+          location.reload()
+        }
+      });
     }
   });
 });
+
 
 
 /* 更新数据 */
@@ -84,14 +132,16 @@ $(document).on('click', '#update', function () {
   $.ajax({
     url: 'http://127.0.0.1:3000/update',
     success: function (res) {
+      alert(res.message);
       if (res.status == 0) {
         location.reload();
       } else {
-        alert(res.message);
+        alert('更新失败');
       }
     }
   });
 });
+
 
 
 /* 售出 */
@@ -116,14 +166,9 @@ $(document).on('click', 'table tr td span', function () {
       codePriceEnd: codePriceEnd,
       sh300End: sh300End,
     },
-    success: function (res) {
-      if (res.status == 0) {
-        location.reload();
-      } else {
-        alert(res.message);
-      }
-    }
   });
+
+  setTimeout("location.reload()", 3000);
 });
 
 
