@@ -70,7 +70,7 @@ exports.getData = function (req, res) {
         newdata.push(one);
       }
       console.log('Get data success');
-      return res.jsonp(newdata);
+      return res.jsonp({status:0, result:newdata, message: "get data success"});
     });
 
     // 这里为了方便把想尽的信息存储在了onObservationplus中
