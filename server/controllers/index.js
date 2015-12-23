@@ -1,90 +1,66 @@
-var mongo = require('mongodb');
-// var monk = require('monk');
-// var db = monk('localhost:27017/guping');
 var request = require('request');
 var async = require('async');
-var MongoClient = require('mongodb').MongoClient
+var MongoClient = require('mongodb').MongoClient;
 
-dbpath='mongodb://localhost:27017/guping';
+// The mongodb path
+var dbpath='mongodb://localhost:27017/guping';
 
-/* 获取数据 */
+/*
+* getData: Select all or one user
+* method: GET
+* if --URL1: http://127.0.0.1:3000/getData
+*    | - select all
+*    |-URL2: http://127.0.0.1:3000/getData/dongdong
+*    | - select user 'dongdong'
+*/
 exports.getData = function (req, res) {
 
-  if (req.params.user) {
-    console.log(req.params.user);
+  var finder = {};
+  var author = req.params.user || undefined;
+  if (author) {
     finder = {"author": req.params.user};
   } else {
     finder = {};
   }
 
+  // Mongo client
   MongoClient.connect(dbpath, function(err, db) {
+    if (err) {throw err;}
+
     var collection = db.collection('onObservation');
-
     collection.find(finder).toArray(function (err, docs) {
+      if (err) {throw err;}
 
-      var newdata = [];
-      for (var i=0; i<docs.length; i++) {
+      var i = 0;
+      var item = {};
+      var data = [];
+      for (i=0; i<docs.length; i++) {
 
-        /* 计算股票和沪深300涨幅 */
-        code_up = (docs[i].codePriceEnd - docs[i].codePriceStart) / docs[i].codePriceStart;
-        code_up_string = (code_up * 100).toFixed(2).toString() + "%";
-
-        sh300_up = (docs[i].sh300End - docs[i].sh300Start) / docs[i].sh300Start;
-        sh300_up_string = (sh300_up * 100).toFixed(2).toString() + "%";
-
-        relative_up = ((code_up - sh300_up) * 100).toFixed(2)
-        relative_up_string = relative_up.toString() + "%";
-
-        /* 获取当前得日期 如2015-11-11*/
-        date = new Date();
-        Ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-
-        /* 求得持股天数 */
-        sDate= docs[i].startDate;
-        eDate= docs[i].ifsell === 1 ? docs[i].endDate : Ymd;
-        sArr = sDate.split("-");
-        eArr = eDate.split("-");
-        sRDate = new Date(sArr[0], sArr[1], sArr[2]);
-        eRDate = new Date(eArr[0], eArr[1], eArr[2]);
-        hold_days = (eRDate-sRDate)/(24*60*60*1000);
-
-        /* 重组返回得数据 */
-        one = {
+        item = {
           "code": docs[i].code,
           "name": docs[i].name,
           "author": docs[i].author,
           "startDate": docs[i].startDate,
-          "endDate": eDate,
+          "endDate": docs[i].endDate,
           "codePriceStart": parseFloat(docs[i].codePriceStart),
           "codePriceEnd": parseFloat(docs[i].codePriceEnd),
-          "code_up": code_up_string,
+          "code_up": docs[i].code_up_string,
           "sh300Start": parseFloat(docs[i].sh300Start),
           "sh300End": parseFloat(docs[i].sh300End),
-          "sh300_up": sh300_up_string,
-          "relative_up": parseFloat(relative_up),
-          "relative_up_string": relative_up_string,
-          "hold_days": hold_days,
+          "sh300_up": docs[i].sh300_up_string,
+          "relative_up": parseFloat(docs[i].relative_up),
+          "relative_up_string": docs[i].relative_up_string,
+          "hold_days": docs[i].hold_days,
           "ifsell": docs[i].ifsell
-        }
+        };
 
-        newdata.push(one);
+        data.push(item);
       }
       console.log('Get data success');
-      return res.jsonp({status:0, result:newdata, message: "get data success"});
+      return res.jsonp({status: 0, result: data, message: "get data success"});
     });
-
-    // 这里为了方便把想尽的信息存储在了onObservationplus中
-    // 以便统计排序等操作
-    /*
-    collection2.remove({}, function () {
-      collection2.insert(newdata, function (err, result) {
-        console.log('Insert to onObservationplus');
-        return res.jsonp(newdata);
-      });
-    });
-   */
   });
-}
+};
 
 
 /* 添加数据 */
@@ -105,7 +81,7 @@ exports.add = function (req, res) {
       var url = 'http://nuff.eastmoney.com/EM_Finance2015TradeInterface/JS.ashx?id=' + code + flag;
 
       request(url, function (err, response, data) {
-        if (!err && response.statusCode == 200) {
+        if (!err && response.statusCode === 200) {
           var jsonpData = data;
           var startPos = jsonpData.indexOf('({');
           var endPos = jsonpData.indexOf('})');
@@ -113,29 +89,29 @@ exports.add = function (req, res) {
           var json = JSON.parse(jsonString);
 
           // 获得接口数据
-          var codePriceStart = parseFloat(json['Value'][25]);
+          var codePriceStart = parseFloat(json.Value[25]);
           var codePriceEnd = codePriceStart;
 
           var res_json = {
             code: code,
-            name: json['Value'][2],
+            name: json.Value[2],
             codePriceStart: codePriceStart,
             codePriceEnd: codePriceEnd
-          }
+          };
 
           callback(null, res_json);
 
         } else {
           console.log(err);
         }
-      })
+      });
     },
     // 添加沪深300信息
     function (callback) {
-      sh300_url = 'http://nufm2.dfcfw.com/EM_Finance2014NumericApplication/JS.aspx?type=CT&cmd=0003001&&sty=AMIC&st=z&sr=1&p=1&ps=1000&cb=&js=callbacksh300&token=beb0a0047196124721f56b0f0ff5a27c'
+      var sh300_url = 'http://nufm2.dfcfw.com/EM_Finance2014NumericApplication/JS.aspx?type=CT&cmd=0003001&&sty=AMIC&st=z&sr=1&p=1&ps=1000&cb=&js=callbacksh300&token=beb0a0047196124721f56b0f0ff5a27c';
 
       request(sh300_url, function (err, response, data) {
-        if (!err && response.statusCode == 200) {
+        if (!err && response.statusCode === 200) {
           var startPos = data.indexOf('([');
           var endPos = data.indexOf('])');
           var string = data.substring(startPos+3, endPos-1);
@@ -148,7 +124,7 @@ exports.add = function (req, res) {
           var res_json = {
             sh300Start: sh300Start,
             sh300End: sh300End
-          }
+          };
           callback(null, res_json);
         } else {
           console.log(err);
@@ -156,10 +132,11 @@ exports.add = function (req, res) {
       });
     }
   ], function (err, result) {
+    if (err) { throw err; }
 
     // 获取当前日期
-    date = new Date();
-    Ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+    var date = new Date();
+    var Ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
 
     // result为code接口与sh300接口返回的数据, 在这里重新拼接
     var json = {
@@ -173,23 +150,22 @@ exports.add = function (req, res) {
       sh300Start: result[1].sh300Start,
       sh300End: result[1].sh300End,
       ifsell: 0
-    }
+    };
 
     // 存入数据库
     MongoClient.connect(dbpath, function (err, db) {
-      if (err) throw err;
+      if (err) { throw err; }
       var collection = db.collection('onObservation');
       collection.insert(json, function (e, docs) {
-        if (e) throw e;
+        if (e) { throw e; }
         if (docs.result.ok === 1) {
           console.log('add code to database success');
           db.close();
           return res.jsonp({status:0, result:"", message:"add code success"});
-        } else {
-          console.log('add code to database failed');
-          db.close();
-          return res.jsonp({status:-1, result:"", message:"add code to database failed"});
         }
+        console.log('add code to database failed');
+        db.close();
+        return res.jsonp({status:-1, result:"", message:"add code to database failed"});
       });
     });
   });
@@ -288,7 +264,6 @@ exports.update = function (req, res) {
       ], function (err, result) {
         console.log(result);
         db.close();
-        return res.jsonp({status:0, result:"", message:"update success"});
       });
     });
   });

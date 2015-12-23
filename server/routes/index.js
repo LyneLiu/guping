@@ -1,12 +1,13 @@
 var express = require('express');
 var router = express.Router();
 
-index = require('../controllers/index.js');
-auth = require('../middleware/auth.js');
-admin = require('../controllers/admin.js');
+var index = require('../controllers/index.js');
+var auth = require('../middleware/auth.js');
+var admin = require('../controllers/admin.js');
 
 // 获取数据
 router.get('/getData', index.getData);
+router.get('/getData/:user', index.getData);
 //router.post('/add', auth.needLogin, index.add);
 router.post('/add', index.add);
 router.get('/update', index.update);
@@ -21,7 +22,7 @@ router.get('/auth_status', admin.auth_status);
 router.post('/login', admin.loginCheck);
 router.get('/logout', admin.logout);
 
-test = require('../controllers/test.js');
+var test = require('../controllers/test.js');
 router.get('/test', test.hello);
 
 module.exports = router;
