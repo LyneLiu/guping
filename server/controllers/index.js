@@ -44,10 +44,12 @@ exports.getData = function (req, res) {
           "endDate": docs[i].endDate,
           "codePriceStart": parseFloat(docs[i].codePriceStart),
           "codePriceEnd": parseFloat(docs[i].codePriceEnd),
-          "code_up": docs[i].code_up_string,
+          "code_up": docs[i].code_up,
+          "code_up_string": docs[i].code_up_string,
           "sh300Start": parseFloat(docs[i].sh300Start),
           "sh300End": parseFloat(docs[i].sh300End),
-          "sh300_up": docs[i].sh300_up_string,
+          "sh300_up": docs[i].sh300_up,
+          "sh300_up_string": docs[i].sh300_up_string,
           "relative_up": parseFloat(docs[i].relative_up),
           "relative_up_string": docs[i].relative_up_string,
           "hold_days": docs[i].hold_days,
@@ -144,12 +146,19 @@ exports.add = function (req, res) {
       name: result[0].name,
       author: author,
       startDate: Ymd,
-      endDate: '',
+      endDate: Ymd,
       codePriceStart: result[0].codePriceStart,
       codePriceEnd: result[0].codePriceEnd,
       sh300Start: result[1].sh300Start,
       sh300End: result[1].sh300End,
-      ifsell: 0
+      ifsell: 0,
+      code_up: 0.00,
+      code_up_string: "0.00%",
+      sh300_up: 0.00,
+      sh300_up_string: "0.00",
+      relative_up: 0.00,
+      relative_up_string: "0.00",
+      hold_days: 0
     };
 
     // 存入数据库
@@ -217,7 +226,7 @@ exports.update = function (req, res) {
               collection.update({"code": code}, {$set: {"codePriceEnd": codePriceEnd}}, {multi: true}, function (err, docs) {
                 if (err) throw err;
                 if (docs.result.ok === 1) {
-                  console.log('update ' + code + ' data success');
+                  console.log('update ' + code + ' data success: ' + codePriceEnd);
                 } else {
                   console.log('update ' + code + ' data failed');
                 }
@@ -250,7 +259,7 @@ exports.update = function (req, res) {
             // 更新数据
             collection.update({"ifsell": {"$eq": 0}}, {$set: {"sh300End": sh300End}}, {multi: true}, function (err, docs) {
               if (err) throw err;
-              if (docs.result.ok > 1) {
+              if (docs.result.ok >= 1) {
                 console.log('update sh300 data success: ' + sh300End);
               } else {
                 console.log('update sh300 data failed');
@@ -263,6 +272,7 @@ exports.update = function (req, res) {
         },
       ], function (err, result) {
         console.log(result);
+        console.log('Wait for the next update...');
         db.close();
       });
     });
