@@ -4,8 +4,8 @@ var index = require('./index');
 
 var isWorkTime = function () {
   var bit2 = function (t) {
-    if (t.length < 10) {
-      return '0' + t;
+    if (t < 10) {
+      return '0' + String(t);
     }
     return t;
   };
