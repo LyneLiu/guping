@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "test": "./node_modules/.bin/mocha"
   },
   "dependencies": {
     "body-parser": "~1.13.2",
@@ -24,5 +25,8 @@
     "connect-redis": "~3.0.1",
     "mathjs": "~2.5.0",
     "should": "~8.0.2"
+  },
+  "devDependencies": {
+    "mocha": "~2.3.4"
   }
 }
