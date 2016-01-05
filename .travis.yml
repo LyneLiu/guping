@@ -12,6 +12,7 @@ sudo: false
 
 before_script:
   - cd server
+  - npm install
 
 services:
   - mongodb
