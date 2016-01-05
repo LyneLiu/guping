@@ -1,5 +1,4 @@
 // file: test/em_interface.test.js
-var tool = require('../controllers/tool');
 var should = require('should');
 var http = require('http');
 var request = require('request');

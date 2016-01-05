@@ -18,4 +18,9 @@ describe("test/index.test.js", function () {
       done();
     });
   });
+
+  /*
+  it("add should return {status: 0, ...}", function (done) {
+  });
+ */
 });
