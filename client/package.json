@@ -1,0 +1,9 @@
+{
+  "name": "webguping",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "react-dom": "~0.14.5",
+    "react": "~0.14.5"
+  }
+}

@@ -21,7 +21,4 @@ router.get('/auth_status', admin.auth_status);
 router.post('/login', admin.loginCheck);
 router.get('/logout', admin.logout);
 
-var test = require('../controllers/test.js');
-router.get('/test', test.hello);
-
 module.exports = router;

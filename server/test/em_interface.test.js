@@ -8,17 +8,19 @@ var sh300_url = 'http://nufm2.dfcfw.com/EM_Finance2014NumericApplication/JS.aspx
 
 describe("test/em_interface.test.js", function () {
 
+  /*
   it("Code API statusCode should equal 200", function (done) {
-    this.timeout(5000);
+    this.timeout(6000);
     http.get(code_url, function (res) {
       res.statusCode.should.equal(200);
       done();
     });
 
   });
+ */
 
   it("SH300 API statusCode should equal 200", function (done) {
-    this.timeout(5000);
+    this.timeout(6000);
     request(sh300_url, function (err, response, data) {
       should.not.exist(err);
       response.statusCode.should.equal(200);
