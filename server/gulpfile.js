@@ -3,7 +3,9 @@ var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
 var react = require('gulp-react');
 var nodemon = require('gulp-nodemon');
-var browserify = require('gulp-browserify');
+// var browserify = require('gulp-browserify');
+var source = require("vinyl-source-stream");
+var browserify = require('browserify');
 var reactify = require('reactify');
 
 gulp.task('mocha', function () {
@@ -28,8 +30,13 @@ gulp.task('watch-jsx', function () {
 });
 */
 
-gulp.task('browserify', function() {
-  console.log('---');
+gulp.task('browserify', function(){
+  var b = browserify();
+  b.transform(reactify); // use the reactify transform
+  b.add('../client/js/app.jsx');
+  return b.bundle()
+    .pipe(source('app.js'))
+    .pipe(gulp.dest('public/dist'));
 });
 
 gulp.task('start', function () {
@@ -42,5 +49,5 @@ gulp.task('start', function () {
 
 gulp.task('default', function () {
     // gulp.run('mocha', 'watch-mocha', 'jsx', 'watch-jsx', 'start', 'scripts');
-    gulp.run('mocha', 'watch-mocha', 'browserify', 'start');
+    gulp.run('browserify', 'start');
 });
