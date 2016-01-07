@@ -1,9 +1,13 @@
-var React = require('react');
-var ReactDOM = require('react-dom');
+var Parent = require('./components/Parent.jsx');
 
 var HomePage = React.createClass({
   render: function () {
-    return <div>hello react... </div>;
+    return (
+      <div>
+        hello react...
+        <Parent />
+      </div>
+    );
   }
 });
 
