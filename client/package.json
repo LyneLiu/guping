@@ -3,14 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "react-dom": "~0.14.5",
-    "react": "~0.14.5"
+    "antd": "^0.11.2",
+    "react": "~0.14.5",
+    "react-dom": "~0.14.5"
   },
   "devDependencies": {
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-react": "^6.3.13",
     "babelify": "^7.2.0",
     "browserify": "^12.0.1",
     "browserify-shim": "^3.8.11",
     "gulp": "^3.9.0",
+    "gulp-babel": "^6.1.1",
     "gulp-react": "^3.1.0",
     "reactify": "^1.1.1",
     "vinyl-source-stream": "^1.1.0"

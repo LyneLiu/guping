@@ -18,5 +18,13 @@ gulp.task('start', function () {
 });
 
 gulp.task('default', function () {
-    gulp.watch(['controllers/**'], ['mocha']);
+    gulp.watch(['controllers/**'], ['mocha', 'start']);
+
+    gulp.run('start');
 });
+
+
+
+
+
+
