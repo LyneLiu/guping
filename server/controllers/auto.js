@@ -65,5 +65,5 @@ function auto_run() {
 
 
 exports.start = function() {
-  setInterval(auto_run, 30000);
+  setInterval(auto_run, 15000);
 }
