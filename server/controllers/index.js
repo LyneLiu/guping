@@ -37,6 +37,7 @@ exports.getData = function (req, res) {
       for (i=0; i<docs.length; i++) {
 
         item = {
+          "key": i+1,
           "code": docs[i].code,
           "name": docs[i].name,
           "author": docs[i].author,
@@ -285,14 +286,10 @@ exports.sell = function (req, res) {
 
   code = req.body.code;
   author = req.body.author;
-  codePriceEnd = req.body.codePriceEnd;
-  sh300End = req.body.sh300End;
   startDate = req.body.startDate;
 
   console.log(code);
   console.log(author);
-  console.log(codePriceEnd);
-  console.log(sh300End);
   console.log(startDate);
 
   /* 获取当前得日期 如2015-11-11*/
@@ -310,8 +307,6 @@ exports.sell = function (req, res) {
 
   /* 待更新的数据 */
   json = {
-    "sh300End": sh300End,
-    "codePriceEnd": codePriceEnd,
     "endDate": Ymd,
     "hold_days": hold_days,
     "ifsell": 1

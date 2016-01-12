@@ -2,6 +2,12 @@
   "name": "webguping",
   "version": "0.0.0",
   "private": true,
+  "browserify": {
+     "transform": [ "browserify-shim" ]
+  },
+  "browserify-shim": {
+      "cli-jquery": "global:$"
+  },
   "dependencies": {
     "antd": "^0.11.2",
     "react": "^0.14.6",
