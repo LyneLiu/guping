@@ -216,8 +216,13 @@ exports.update = function (req, res) {
                 var endPos = jsonpData.indexOf('})');
                 var jsonString = jsonpData.substring(startPos+1, endPos+1);
                 var json = JSON.parse(jsonString);
+                
+                if (json['Value'][25] === "0.00") {
+                  var codePriceEnd = parseFloat(json['Value'][34]); // 昨收价
+                } else {
+                  var codePriceEnd = parseFloat(json['Value'][25]); // 当前价
+                };
 
-                var codePriceEnd = parseFloat(json['Value'][25]); // 当前价
               }
               else {
                 console.log(err);
